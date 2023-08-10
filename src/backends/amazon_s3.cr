@@ -33,7 +33,7 @@ module UploadSigner
     # Create a signed URL for access a private file
     def get_object(bucket : String, filename : String, expires = 5 * 60)
       filename = "/#{filename}" unless filename.starts_with?('/')
-      res = presign_url(:get, bucket, filename, "", expires)
+      res = presign_url(:get, bucket, filename, expires: expires)
       res[:url]
     end
 
@@ -44,9 +44,9 @@ module UploadSigner
       end
 
       verb = :put
-      path = ""
+      params = {} of String => String?
       if size > UPLOAD_THRESHOLD
-        path = "uploads"
+        params["uploads"] = nil
         verb = :post
         @multipart = true
       else
@@ -54,27 +54,27 @@ module UploadSigner
         headers["Content-Type"] = mime
         @multipart = false
       end
-      presign_url(verb, bucket, object_key, path, expires, headers)
+      presign_url(verb, bucket, object_key, params, expires, headers)
     end
 
     # Returns the request to get the parts of a resumable upload
     def get_parts(bucket : String, object_key : String, size : Int64, resumable_id : String, headers = {} of String => String)
-      path = "uploadId=#{resumable_id}"
+      params = {"uploadId" => resumable_id}
       @multipart = true
-      presign_url(:get, bucket, object_key, path, headers: headers)
+      presign_url(:get, bucket, object_key, params, headers: headers)
     end
 
     def set_part(bucket : String, object_key : String, size : Int64, md5 : String?, part : String, resumable_id : String, headers = {} of String => String)
       headers["Content-Md5"] = md5 if md5 && !headers.has_key?("Content-Md5")
       headers["Content-Type"] = "binary/octet-stream"
-      path = "partNumber=#{part}&uploadId=#{resumable_id}"
-      presign_url(:put, bucket, object_key, path, headers: headers)
+      params = {"partNumber" => part, "uploadId" => resumable_id}
+      presign_url(:put, bucket, object_key, params, headers: headers)
     end
 
     def commit_file(bucket : String, object_key : String, resumable_id : String, headers = {} of String => String)
-      path = "uploadId=#{resumable_id}"
+      params = {"uploadId" => resumable_id}
       headers["Content-Type"] = "application/xml; charset=UTF-8"
-      presign_url(:post, bucket, object_key, path, headers: headers)
+      presign_url(:post, bucket, object_key, params, headers: headers)
     end
 
     def delete_file(bucket : String, object_key : String, resumable_id : String? = nil)
@@ -108,16 +108,16 @@ module UploadSigner
     end
 
     # :nodoc
-    private def presign_url(verb : Symbol, bucket : String, object : String, path = "", expires = 5 * 60, headers = {} of String => String)
+    private def presign_url(verb : Symbol, bucket : String, object : String, params = {} of String => String?, expires = 5 * 60, headers = {} of String => String)
       verb = verb.to_s.upcase
-      request = build_request(verb, bucket, object, path, expires)
+      request = build_request(verb, bucket, object, params, expires)
       headers.each do |k, v|
         request.query_params.add(k, v)
       end
       @signer.presign(request)
 
       url = String.build do |str|
-        str << protocol # "https://"
+        str << protocol
         {% if compare_versions(Crystal::VERSION, "0.36.0") < 0 %}
           str << request.host
         {% else %}
@@ -130,18 +130,21 @@ module UploadSigner
     end
 
     # :nodoc
-    private def build_request(method : String, bucket : String, object : String, path = "", expires = 5 * 60)
-      headers = HTTP::Headers{"Host" => host} # endpoint.host || "s3-#{@region}.amazonaws.com"}
+    private def build_request(method : String, bucket : String, object : String, params = {} of String => String?, expires = 5 * 60)
+      headers = HTTP::Headers{"Host" => host}
 
-      # body = path.empty? ? (@signer_version == :v4 ? "UNSIGNED-PAYLOAD" : nil) : nil
       body = @signer_version == :v4 ? "UNSIGNED-PAYLOAD" : nil
 
       request = HTTP::Request.new(
         method,
-        "/#{bucket}#{object}#{"?#{path}" unless path.empty?}",
+        "/#{bucket}#{object}",
         headers,
         body
       )
+
+      params.each do |k, v|
+        request.query_params.add(k, v || "")
+      end
 
       if @signer_version == :v4
         request.query_params.add("X-Amz-Expires", expires.to_s)
