@@ -113,6 +113,7 @@ module UploadSigner
       request = build_request(verb, bucket, object, params, expires)
       headers.each do |k, v|
         request.query_params.add(k, v)
+        request.headers.add(k, v)
       end
       @signer.presign(request)
 
