@@ -50,7 +50,7 @@ module UploadSigner
         verb = :post
         @multipart = true
       else
-        headers["Content-Md5"] = md5
+        headers["Content-MD5"] = md5
         headers["Content-Type"] = mime
         @multipart = false
       end
@@ -65,7 +65,7 @@ module UploadSigner
     end
 
     def set_part(bucket : String, object_key : String, size : Int64, md5 : String?, part : String, resumable_id : String, headers = {} of String => String)
-      headers["Content-Md5"] = md5 if md5 && !headers.has_key?("Content-Md5")
+      headers["Content-MD5"] = md5 if md5 && !headers.has_key?("Content-MD5")
       headers["Content-Type"] = "binary/octet-stream"
       params = {"partNumber" => part, "uploadId" => resumable_id}
       presign_url(:put, bucket, object_key, params, headers: headers)
