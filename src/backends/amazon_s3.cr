@@ -1,12 +1,12 @@
 require "awscr-s3"
 require "awscr-signer"
+require "../storage"
 
 module UploadSigner
-  class AmazonS3
+  class AmazonS3 < Storage
     UPLOAD_THRESHOLD = 5_000_000 # 5mb
 
     getter region : String
-    getter? multipart : Bool = false
 
     def initialize(@aws_access_key : String, @aws_secret_key : String, region : String? = nil, @endpoint : String? = nil, @signer_version : Symbol = :v4)
       @region = region || "us-east-1"
@@ -38,7 +38,7 @@ module UploadSigner
     end
 
     # Creates a new upload request (either single shot or multi-part)
-    def sign_upload(bucket : String, object_key : String, size : Int64, md5 : String, mime = "binary/octet-stream", permissions = :public, expires = 5 * 60, headers = {} of String => String)
+    def sign_upload(bucket : String, object_key : String, size : Int64, md5 : String, mime = "binary/octet-stream", permissions = :public, expires = 5 * 60, headers = {} of String => String) : SignResp
       unless headers.has_key?("x-amz-acl")
         headers["x-amz-acl"] = (permissions == :public) ? "public-read" : "private"
       end

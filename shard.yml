@@ -1,5 +1,5 @@
 name: upload-signer
-version: 0.1.0
+version: 0.2.0
 
 description: |
   Provide API for generating pre-signed URLs for file uploads to cloud storage
@@ -11,3 +11,5 @@ license: MIT
 dependencies:
   awscr-s3:
     github: taylorfinnell/awscr-s3
+  azblob:
+    github: spider-gazelle/azblob.cr
