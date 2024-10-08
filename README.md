@@ -2,7 +2,7 @@
 
 Crystal shard to provide API for generating pre-signed URLs for file uploads to cloud storage. This shard was created to provide direct to cloud uploads using browser functionality to [PlaceOS](https://github.com/PlaceOS/PlaceOS), but is designed to be generic and can be used with any library and/or application.
 
-> Currently only supports Amazon S3
+> Currently supports Amazon S3 and Azure Storage (Blob)
 
 
 Benefits of moving file uploads functionality near to end user are:
