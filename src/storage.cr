@@ -1,5 +1,7 @@
 module UploadSigner
   abstract class Storage
+    UPLOAD_THRESHOLD = 5_000_000 # 5mb
+
     alias SignResp = NamedTuple(verb: String, url: String, headers: Hash(String, String))
 
     def self.signer(type : StorageType, account_name : String, account_key : String, region : String? = nil, endpoint : String? = nil)

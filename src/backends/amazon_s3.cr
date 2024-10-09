@@ -4,8 +4,6 @@ require "../storage"
 
 module UploadSigner
   class AmazonS3 < Storage
-    UPLOAD_THRESHOLD = 5_000_000 # 5mb
-
     getter region : String
 
     def initialize(@aws_access_key : String, @aws_secret_key : String, region : String? = nil, @endpoint : String? = nil, @signer_version : Symbol = :v4)

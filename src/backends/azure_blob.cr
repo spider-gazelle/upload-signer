@@ -24,8 +24,7 @@ module UploadSigner
     end
 
     def sign_upload(bucket : String, object_key : String, size : Int64, md5 : String, mime = "binary/octet-stream", permissions = :public, expires = 5 * 60, headers = {} of String => String) : SignResp
-      # headers = headers.transform_keys { |key| key.downcase.starts_with?("x-ms-blob") ? key.downcase : "x-ms-blob-#{key.downcase}" }
-      @multipart = size > AZBlob::MaxUploadBlobBytes
+      @multipart = size > UPLOAD_THRESHOLD
       headers.put("x-ms-blob-type", "BlockBlob") { } unless multipart?
       headers.put("x-ms-blob-content-type", mime) { }
       headers.put("x-ms-blob-content-md5", md5) { }
