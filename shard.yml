@@ -1,5 +1,5 @@
 name: upload-signer
-version: 0.2.0
+version: 0.2.1
 
 description: |
   Provide API for generating pre-signed URLs for file uploads to cloud storage
