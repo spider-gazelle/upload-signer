@@ -53,4 +53,45 @@ describe UploadSigner::AzureStorage do
     res["headers"]["x-ms-blob-content-md5"].should eq("0rCswYQrAETaZ/PvH0zUAA==")
     res["headers"]["x-ms-blob-content-type"].should eq("binary/octet-stream")
   end
+
+  it "should generate write-enabled SAS for get_parts" do
+    az = UploadSigner.azure("myteststorage", "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==")
+    res = az.get_parts("test-bucket", "test.jpeg", 70593_0000, "upload-id")
+
+    res["verb"].should eq("GET")
+    res["url"].should contain("comp=blocklist")
+    res["url"].should contain("blocklisttype=all")
+
+    uri = URI.parse(res["url"])
+    params = URI::Params.parse(uri.query || "")
+    params["sp"].should eq("rl") # read + list permissions for getting parts
+    params["sig"]?.should_not be_nil
+  end
+
+  it "should generate write-enabled SAS for set_part" do
+    az = UploadSigner.azure("myteststorage", "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==")
+    res = az.set_part("test-bucket", "test.jpeg", 1000, "md5hash", "part1", "upload-id")
+
+    res["verb"].should eq("PUT")
+    res["url"].should contain("comp=block")
+    res["url"].should contain("blockid=part1")
+
+    uri = URI.parse(res["url"])
+    params = URI::Params.parse(uri.query || "")
+    params["sp"].should eq("cw") # create + write permissions
+    params["sig"]?.should_not be_nil
+  end
+
+  it "should generate write-enabled SAS for commit_file" do
+    az = UploadSigner.azure("myteststorage", "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==")
+    res = az.commit_file("test-bucket", "test.jpeg", "upload-id")
+
+    res["verb"].should eq("PUT")
+    res["url"].should contain("comp=blocklist")
+
+    uri = URI.parse(res["url"])
+    params = URI::Params.parse(uri.query || "")
+    params["sp"].should eq("cw") # create + write permissions
+    params["sig"]?.should_not be_nil
+  end
 end

@@ -40,12 +40,12 @@ module UploadSigner
     end
 
     def set_part(bucket : String, object_key : String, size : Int64, md5 : String?, part : String, resumable_id : String, headers = {} of String => String)
-      sas = get_object(bucket, object_key)
+      sas = client.blob_sas(bucket, object_key, 5.minutes, AZBlob::BlobPermissions.write | AZBlob::BlobPermissions.create)
       {verb: "PUT", url: "#{sas}&comp=block&blockid=#{URI.encode_path_segment(part)}", headers: headers}
     end
 
     def commit_file(bucket : String, object_key : String, resumable_id : String, headers = {} of String => String)
-      sas = get_object(bucket, object_key)
+      sas = client.blob_sas(bucket, object_key, 5.minutes, AZBlob::BlobPermissions.write | AZBlob::BlobPermissions.create)
       {verb: "PUT", url: "#{sas}&comp=blocklist", headers: headers}
     end
 
